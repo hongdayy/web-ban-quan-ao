@@ -1,9 +1,9 @@
-import React, { useContext } from 'react'; // Import useContext
-import Title from '../components/Title';
-import { ShopContext } from '../context/ShopContext'; // Import ShopContext
+import React, { useContext } from 'react';
+import { ShopContext } from '../context/ShopContext';
+import Title from '../components/layout/Title';
 
 const Orders = () => {
-  const { products, currency } = useContext(ShopContext); // Sử dụng useContext để lấy dữ liệu từ ShopContext
+  const { orders } = useContext(ShopContext); // Lấy danh sách đơn hàng từ context
 
   return (
     <div className='border-t pt-16'>
@@ -12,41 +12,40 @@ const Orders = () => {
       </div>
 
       <div>
-        {products.slice(1, 4).map((item, index) => (
-          <div
-            key={index}
-            className='py-4 border-t border-b text-gray-700 flex flex-col md:flex-row md:items-center ms:justify-between gap-4'
-          >
-            <div className='flex items-start gap-6 text-sm'>
-              <img className='w-16 sm:w-20' src={item.image[0]} alt="" />
+        {orders.length > 0 ? (
+          orders.map((order, index) => (
+            <div key={index} className='py-4 border-t border-b text-gray-700'>
+              <h3 className='text-lg font-medium'>Mã đơn: {order.id} - {order.date}</h3>
+              <p className='text-gray-500'>Phương thức thanh toán: {order.method}</p>
+              <p className='text-gray-700 font-bold mt-2'>Tổng tiền: {order.totalAmount.toLocaleString('vi-VN')} VND</p>
 
-              <div>
-                <p className='sm:text-base font-medium'>{item.name}</p>
-                <div className='flex items-center gap-3 mt-2 text-base text-gray-700'>
-                  <p className='text-lg'>
-                    {item.price.toLocaleString('vi-VN')}.000 VND {currency}
-                  </p>
-                  <p>Số lượng: 1</p>
-                  <p>Size: M</p>
+              {/* Danh sách sản phẩm trong đơn hàng */}
+              {order.items.map((item, idx) => (
+                <div key={idx} className='flex items-center gap-4 mt-4'>
+                  <img className='w-16 sm:w-20' src={item.image} alt={item.name} />
+                  <div>
+                    <p className='text-base font-medium'>{item.name}</p>
+                    <p className='text-sm text-gray-600'>Số lượng: {item.quantity}</p>
+                    <p className='text-sm text-gray-600'>Giá: {item.price.toLocaleString('vi-VN')} VND</p>
+                  </div>
                 </div>
-                <p>
-                  Ngày: <span className='text-gray-400'>25, Tháng 12, 2024</span>
-                </p>
-              </div>
-            </div>
+              ))}
 
-            {/* Căn trạng thái và nút trên cùng hàng */}
-            <div className='md:w-1/2 flex justify-between items-center gap-4'>
-              <div className='flex items-center gap-2'>
-                <p className='min-w-2 h-2 rounded-full bg-green-500'></p>
-                <p className='text-sm md:text-base'>Bắt đầu vận chuyển</p>
+              {/* Trạng thái đơn hàng */}
+              <div className='md:w-1/2 flex justify-between items-center gap-4 mt-4'>
+                <div className='flex items-center gap-2'>
+                  <p className='min-w-2 h-2 rounded-full bg-green-500'></p>
+                  <p className='text-sm md:text-base'>Bắt đầu vận chuyển</p>
+                </div>
+                <button className='border px-4 py-2 text-sm font-medium rounded-sm'>
+                  Theo dõi đơn hàng
+                </button>
               </div>
-              <button className='border px-4 py-2 text-sm font-medium rounded-sm'>
-                Theo dõi đơn hàng
-              </button>
             </div>
-          </div>
-        ))}
+          ))
+        ) : (
+          <p className='text-center text-gray-500'>Không có đơn hàng nào.</p>
+        )}
       </div>
     </div>
   );

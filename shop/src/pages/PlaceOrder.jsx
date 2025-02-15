@@ -1,15 +1,15 @@
-import React, { useContext, useState } from 'react'
-import Title from '../components/Title'
-import CartTotal from '../components/CartTotal'
-import { assets } from '../assets/assets'
-import { ShopContext } from '../context/ShopContext'
+import React, { useState, useContext } from 'react';
+import { useNavigate } from 'react-router-dom';
+import Title from '../components/layout/Title';
+import CartTotal from '../components/cart/CartTotal';
+import { assets } from '../assets/assets';
+import { ShopContext } from '../context/ShopContext';
 
 const PlaceOrder = () => {
+  const [method, setMethod] = useState('cod');
+  const { placeOrder } = useContext(ShopContext); // Sử dụng placeOrder từ context
+  const navigate = useNavigate(); 
 
-  const [method, setMethod] = useState('cod')
-
-  const {navigate} = useContext(ShopContext);
-  
   return (
     <div className='flex flex-col sm:flex-row justify-between gap-4 pt-5 sm:pt-14 min-h-[80vh] border-t'>
       {/* ---------left sidebar --------  */}
@@ -23,14 +23,10 @@ const PlaceOrder = () => {
           <input className='border border-gray-300 rounded py-1.5 px-3.5 w-full' type="text" placeholder='Tên' />
         </div>
         <input className='border border-gray-300 rounded py-1.5 px-3.5 w-full' type="email" placeholder='Nhập email' />
-        <input className='border border-gray-300 rounded py-1.5 px-3.5 w-full' type="email" placeholder='Số điện thoại' />
+        <input className='border border-gray-300 rounded py-1.5 px-3.5 w-full' type="text" placeholder='Số điện thoại' />
         <div className='flex gap-3'>
           <input className='border border-gray-300 rounded py-1.5 px-3.5 w-full' type="text" placeholder='Tỉnh/ thành phố, Quận/ huyện' />
           <input className='border border-gray-300 rounded py-1.5 px-3.5 w-full' type="text" placeholder='Tên đường, Tòa nhà, Số nhà' />
-        </div>
-        <div className='flex gap-3'>
-          <input className='border border-gray-300 rounded py-1.5 px-3.5 w-full' type="number" placeholder='Mã thẻ thanh toán' />
-          <input className='border border-gray-300 rounded py-1.5 px-3.5 w-full' type="text" placeholder='Thẻ nội địa/ tín dụng' />
         </div>
       </div>
       
@@ -65,8 +61,14 @@ const PlaceOrder = () => {
               <p className='text-gray-500 text-sm font-medium mx-4'>THANH TOÁN</p>
             </div>
           </div>
-          <div className='w-full text-end  mt-8'>
-            <button onClick={()=>navigate('/orders')} className='bg-black text-white px-16 py-3 text-sm'>ĐẶT HÀNG</button>
+
+          {/* Nút đặt hàng */}
+          <div className='w-full text-end mt-8'>
+            <button 
+              onClick={() => placeOrder(method)} 
+              className='bg-black text-white px-16 py-3 text-sm'>
+              ĐẶT HÀNG
+            </button>
           </div>
         </div>
       </div>

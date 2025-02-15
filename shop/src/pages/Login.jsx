@@ -1,117 +1,157 @@
-import React, { useState } from 'react';
+import React, { useState, useContext, useEffect } from "react";
+import {
+  Card,
+  CardHeader,
+  CardBody,
+  CardFooter,
+  Typography,
+} from "@material-tailwind/react";
+import { Input, Button } from "@material-tailwind/react";
+import { Link, useNavigate } from "react-router-dom";
+import { useFormik } from "formik";
+import * as Yup from "yup";
+import ClipLoader from "react-spinners/ClipLoader";
+import { AuthContext } from "../context/AppContext";
+import { auth, onAuthStateChanged } from "../firebase/Firebase";
 
 const Login = () => {
-  const [currentState, setCurrentState] = useState('Đăng nhập');
-  const [userInfo, setUserInfo] = useState({
-    username: '',
-    email: '',
-    password: '',
-  });
-  const [users, setUsers] = useState([]); // Lưu danh sách người dùng đã đăng ký
+  const [loading, setLoading] = useState(false);
+  const { signInWithGoogle, loginWithEmailAndPassword } =
+    useContext(AuthContext);
+  const navigate = useNavigate();
 
-  // Hàm xử lý thay đổi input
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setUserInfo({ ...userInfo, [name]: value });
+  useEffect(() => {
+    setLoading(true);
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        navigate("/");
+        setLoading(false);
+      } else {
+        setLoading(false);
+      }
+    });
+  }, [navigate]);
+
+  let initialValues = {
+    email: "",
+    password: "",
   };
 
-  // Hàm xử lý gửi form
-  const onSubmitHandle = async (event) => {
-    event.preventDefault();
+  const validationSchema = Yup.object({
+    email: Yup.string().email("Email không hợp lệ").required(""),
+    password: Yup.string()
+      .required("")
+      .min(6, "Mật khẩu phải có ít nhất 6 ký tự")
+      .matches(/^[a-zA-Z]+$/, "Mật khẩu chỉ được chứa chữ cái"),
+  });
 
-    if (currentState === 'Đăng ký') {
-      // Kiểm tra thông tin đầu vào
-      if (!userInfo.username || !userInfo.email || !userInfo.password) {
-        alert('Vui lòng nhập đầy đủ thông tin!');
-        return;
-      }
-
-      // Lưu người dùng mới
-      setUsers([...users, userInfo]);
-      alert('Đăng ký thành công!');
-      setUserInfo({ username: '', email: '', password: '' }); // Xóa form
-      setCurrentState('Đăng nhập');
-    } else if (currentState === 'Đăng nhập') {
-      // Kiểm tra thông tin đăng nhập
-      const userFound = users.find(
-        (user) =>
-          user.email === userInfo.email && user.password === userInfo.password
-      );
-      if (userFound) {
-        alert(`Đăng nhập thành công! Xin chào ${userFound.username}`);
-      } else {
-        alert('Email hoặc mật khẩu không đúng!');
-      }
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    const { email, password } = formik.values;
+    if (formik.isValid) {
+      loginWithEmailAndPassword(email, password);
+      setLoading(true);
+    } else {
+      setLoading(false);
+      alert("Vui lòng kiểm tra lại thông tin nhập");
     }
   };
 
+  const formik = useFormik({ initialValues, validationSchema, handleSubmit });
+
   return (
-    <form
-      onSubmit={onSubmitHandle}
-      className='flex flex-col items-center w-[90%] sm:max-w-96 m-auto mt-14 gap-4 text-gray-800'
-    >
-      {/* Tiêu đề */}
-      <div className='inline-flex items-center gap-2 mb-2 mt-10'>
-        <p className='prata-regular text-3xl'>{currentState}</p>
-        <hr className='border-none h-[1.5px] w-8 bg-gray-800' />
-      </div>
+    <>
+      {loading ? (
+        <div className="grid grid-cols-1 justify-items-center items-center h-screen">
+          <ClipLoader color="#367fd6" size={150} speedMultiplier={0.5} />
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 h-screen justify-items-center items-center">
+          <Card className="w-96 border border-gray-400 shadow-md px-4 py-4">
+            <CardHeader
+              variant="gradient"
+              color="blue"
+              className="mb-4 grid h-28 place-items-center border border-gray-400 "
+            >
+              <Typography variant="h3" color="black">
+                ĐĂNG NHẬP
+              </Typography>
+            </CardHeader>
+            <CardBody className="flex flex-col gap-4">
+              <form onSubmit={handleSubmit}>
+                <div className="mt-4 mb-2">
+                  <Typography variant="small" className="w-24">
+                    Email:
+                  </Typography>
+                  <Input
+                    name="email"
+                    type="email"
+                    size="lg"
+                    {...formik.getFieldProps("email")}
+                    className="w-full border border-gray-400"
+                  />
+                </div>
+                {formik.touched.email && formik.errors.email && (
+                  <Typography variant="small" color="red">
+                    {formik.errors.email}
+                  </Typography>
+                )}
 
-      {/* Input */}
-      {currentState === 'Đăng ký' && (
-        <input
-          type='text'
-          name='username'
-          value={userInfo.username}
-          onChange={handleChange}
-          className='w-full px-3 py-2 border border-gray-800 rounded'
-          placeholder='Tên đăng nhập'
-        />
+                <div className="mt-4 mb-2">
+                  <Typography variant="small" className="w-24">
+                    Mật khẩu:
+                  </Typography>
+                  <Input
+                    name="password"
+                    type="password"
+                    size="lg"
+                    {...formik.getFieldProps("password")}
+                    className="w-full border border-gray-400"
+                  />
+                </div>
+                {formik.touched.password && formik.errors.password && (
+                  <Typography variant="small" color="red">
+                    {formik.errors.password}
+                  </Typography>
+                )}
+
+                <Button
+                  variant="gradient"
+                  fullWidth
+                  className="mt-4 mb-4 bg-blue-600"
+                  type="submit"
+                >
+                  Đăng nhập
+                </Button>
+              </form>
+            </CardBody>
+            <CardFooter className="pt-0">
+              <Button
+                variant="gradient"
+                fullWidth
+                className="mb-4 bg-red-600"
+                onClick={signInWithGoogle}
+              >
+                Đăng nhập bằng Google
+              </Button>
+              <Link to="/reset">
+                <p className="text-blue-500 text-center text-sm font-bold">
+                  Quên mật khẩu?
+                </p>
+              </Link>
+              <div className="mt-6 flex items-center justify-center text-base">
+                Chưa có tài khoản?
+                <Link to="/register">
+                  <p className="ml-1 font-bold text-sm text-blue-500">
+                    Đăng ký ngay
+                  </p>
+                </Link>
+              </div>
+            </CardFooter>
+          </Card>
+        </div>
       )}
-      <input
-        type='email'
-        name='email'
-        value={userInfo.email}
-        onChange={handleChange}
-        className='w-full px-3 py-2 border border-gray-800 rounded'
-        placeholder='Địa chỉ email'
-      />
-      <input
-        type='password'
-        name='password'
-        value={userInfo.password}
-        onChange={handleChange}
-        className='w-full px-3 py-2 border border-gray-800 rounded'
-        placeholder='Mật khẩu'
-      />
-
-      {/* Điều hướng */}
-      <div className='w-full flex justify-between text-sm mt-[-8px]'>
-        <p className='cursor-pointer'>Quên mật khẩu?</p>
-        {currentState === 'Đăng nhập' ? (
-          <p
-            onClick={() => setCurrentState('Đăng ký')}
-            className='cursor-pointer text-blue-500'
-          >
-            Tạo tài khoản
-          </p>
-        ) : (
-          <p
-            onClick={() => setCurrentState('Đăng nhập')}
-            className='cursor-pointer text-blue-500'
-          >
-            Đăng nhập tại đây
-          </p>
-        )}
-      </div>
-
-      {/* Nút submit */}
-      <button
-        type='submit'
-        className='bg-black text-white font-light px-8 py-2 mt-4'
-      >
-        {currentState === 'Đăng nhập' ? 'Đăng nhập' : 'Đăng ký'}
-      </button>
-    </form>
+    </>
   );
 };
 

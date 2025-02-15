@@ -1,6 +1,6 @@
 import React, { useContext, useState, useEffect } from 'react';
-import { ShopContext } from '../context/ShopContext';
-import ProductItem from './ProductItem'; 
+import { ShopContext } from '../../context/ShopContext';
+import ProductItem from '../layout/ProductItem'; 
 
 const BestSeller = () => {
   const { products } = useContext(ShopContext);
@@ -8,7 +8,7 @@ const BestSeller = () => {
 
   useEffect(() => {
     // Lấy 5 sản phẩm đầu tiên
-    setBestSeller(products.slice(0, 5));
+    setBestSeller(products.slice(0, 10));
   }, [products]);
 
   // Hàm định dạng giá tiền với thêm '000' và dấu '.'

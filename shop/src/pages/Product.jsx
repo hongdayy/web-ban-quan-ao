@@ -1,8 +1,8 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { ShopContext } from '../context/ShopContext';
-import { assets } from '../assets/assets'; // Đảm bảo assets đã được nhập đúng
-import RelatedProduct from '../components/RelatedProduct';
+import { assets } from '../assets/assets'; 
+import RelatedProduct from '../components//layout/RelatedProduct';
 
 const Product = () => {
   const { productId } = useParams();  // Lấy productId từ URL

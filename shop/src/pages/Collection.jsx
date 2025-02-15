@@ -1,8 +1,8 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { ShopContext } from '../context/ShopContext';
 import { assets } from '../assets/assets';
-import Title from '../components/Title';
-import ProductItem from '../components/ProductItem';
+import Title from '../components/layout/Title';
+import ProductItem from '../components/layout/ProductItem';
 
 const Collection = () => {
   const { products, search, showSearch } = useContext(ShopContext);
@@ -11,14 +11,13 @@ const Collection = () => {
   const [category, setCategory] = useState([]);
   const [subCategory, setSubCategory] = useState([]);
   const [sortType, setSortType] = useState('relavent');
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 12;
 
-
-  // Hàm định dạng giá thành dạng 'x.xxx.xxx VND'
   const formatPrice = (price) => {
     return `${price.toLocaleString('vi-VN')} VND`;
   };
 
-  // Hàm bật/tắt bộ lọc theo danh mục
   const toggleCategory = (e) => {
     if (category.includes(e.target.value)) {
       setCategory((prev) => prev.filter((item) => item !== e.target.value));
@@ -27,7 +26,6 @@ const Collection = () => {
     }
   };
 
-  // Hàm bật/tắt bộ lọc theo phân loại
   const toggleSubCategory = (e) => {
     if (subCategory.includes(e.target.value)) {
       setSubCategory((prev) => prev.filter((item) => item !== e.target.value));
@@ -36,68 +34,69 @@ const Collection = () => {
     }
   };
 
-  // Hàm áp dụng bộ lọc
   const applyFilter = () => {
     let productsCopy = products.slice();
-
-    if(showSearch && search) {
-      productsCopy = productsCopy.filter(item => item.name.toLowerCase().includes(search.toLowerCase()))
+  
+    // Lọc theo từ khóa tìm kiếm
+    if (search) {
+      productsCopy = productsCopy.filter(item =>
+        item.name.toLowerCase().includes(search.toLowerCase())
+      );
     }
-
-    // Lọc theo danh mục (category)
+  
+    // Lọc theo danh mục
     if (category.length > 0) {
-      productsCopy = productsCopy.filter((item) => category.includes(item.category));
+      productsCopy = productsCopy.filter(item => category.includes(item.category));
     }
-
-    // Lọc theo phân loại (subCategory)
+  
+    // Lọc theo kiểu dáng
     if (subCategory.length > 0) {
-      productsCopy = productsCopy.filter((item) => subCategory.includes(item.subCategory));
+      productsCopy = productsCopy.filter(item => subCategory.includes(item.subCategory));
     }
-
-    // Cập nhật danh sách sản phẩm sau khi lọc
+  
     setFilterProducts(productsCopy);
   };
-
-  const sortProduct = () =>{
-    let fpCopy = filterProducts.slice();
-    
-    switch(sortType) {
+  
+  const sortProduct = () => {
+    let fpCopy = [...filterProducts]; // Sao chép mảng tránh thay đổi trực tiếp state
+  
+    switch (sortType) {
       case 'low-high':
-        setFilterProducts(fpCopy.sort((a,b)=>(a.price - b.price)));
+        fpCopy.sort((a, b) => a.price - b.price);
         break;
-
       case 'high-low':
-        setFilterProducts(fpCopy.sort((a,b)=>(b.price - a.price)));
+        fpCopy.sort((a, b) => b.price - a.price);
         break;
-
-        default:
-          applyFilter();
-          break;
+      default:
+        applyFilter();
+        return;
     }
-  }
-
+  
+    setFilterProducts(fpCopy);
+  };
+  
 
   useEffect(() => {
-    // Lấy tất cả sản phẩm khi mới vào trang
     setFilterProducts(products);
   }, [products]);
 
   useEffect(() => {
-    // Áp dụng bộ lọc khi danh mục hoặc phân loại thay đổi
     applyFilter();
-  }, [category, subCategory, search, showSearch]);
-
+  }, [category, subCategory, search]); // Bỏ `showSearch`
+  
 
   useEffect(()=>{
     sortProduct();
-  },[sortType])
+  },[sortType]);
 
+  const indexOfLastProduct = currentPage * pageSize;
+  const indexOfFirstProduct = indexOfLastProduct - pageSize;
+  const currentProducts = filterProducts.slice(indexOfFirstProduct, indexOfLastProduct);
+  const totalPages = Math.ceil(filterProducts.length / pageSize);
 
   return (
     <div className="flex flex-col sm:flex-row gap-1 sm:gap-10 border-t">
-      {/* Phần bộ lọc */}
       <div className="min-w-60">
-        {/* Tiêu đề bộ lọc */}
         <p
           onClick={() => setShowFilter(!showFilter)}
           className="my-2 text-xl flex items-center cursor-pointer gap-2"
@@ -110,7 +109,6 @@ const Collection = () => {
           alt=""
         />
 
-        {/* Bộ lọc theo danh mục */}
         <div className={`border border-gray-300 pl-5 py-3 mt-6 ${showFilter ? '' : 'hidden'} sm:block`}>
           <p className="mb-3 text-sm font-medium">Tùy chỉnh</p>
           <div className="flex flex-col gap-2 text-sm font-light text-gray-700">
@@ -129,9 +127,8 @@ const Collection = () => {
           </div>
         </div>
 
-        {/* Bộ lọc theo phân loại */}
         <div className={`border border-gray-300 pl-5 py-3 my-5 ${showFilter ? '' : 'hidden'} sm:block`}>
-          <p className="mb-3 text-sm font-medium">Tùy chỉnh</p>
+          <p className="mb-3 text-sm font-medium">Kiểu dáng</p>
           <div className="flex flex-col gap-2 text-sm font-light text-gray-700">
             <p className="flex gap-2">
               <input className="w-3" type="checkbox" value="Topwear" onChange={toggleSubCategory} />
@@ -149,11 +146,9 @@ const Collection = () => {
         </div>
       </div>
 
-      {/* Phần danh sách sản phẩm */}
       <div className="flex-1">
         <div className="flex justify-between text-base sm:text-2xl mb-4">
           <Title text1="TẤT CẢ" text2="BỘ SƯU TẬP" />
-          {/* Sắp xếp sản phẩm */}
           <select onChange={(e)=>setSortType(e.target.value)} className="border-2 border-gray-300 text-sm px-2">
             <option value="relevant">Liên quan nhất</option>
             <option value="low-high">Giá từ thấp đến cao</option>
@@ -161,21 +156,27 @@ const Collection = () => {
           </select>
         </div>
 
-        {/* Hiển thị danh sách sản phẩm */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 gap-y-6">
-          {filterProducts.map((item, index) => (
+          {currentProducts.map((item, index) => (
             <ProductItem
               key={index}
               name={item.name}
-              id={item.id}
-              // Định dạng giá với dấu chấm và đơn vị VND
+              id={item._id}
               price={formatPrice(item.price * 1000)}
               image={item.image}
             />
           ))}
         </div>
+        <div className="flex justify-center mt-6 gap-2">
+          <button onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))} disabled={currentPage === 1} className="px-3 py-1 border">Trở về</button>
+          {[...Array(totalPages)].map((_, i) => (
+            <button key={i} onClick={() => setCurrentPage(i + 1)} className={`px-3 py-1 border ${currentPage === i + 1 ? 'bg-gray-300' : ''}`}>{i + 1}</button>
+          ))}
+          <button onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))} disabled={currentPage === totalPages} className="px-3 py-1 border">Tiếp theo</button>
+        </div>
       </div>
     </div>
+     
   );
 };
 

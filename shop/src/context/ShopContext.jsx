@@ -1,90 +1,101 @@
-import React, { createContext, useEffect, useState } from 'react';
+import React, { createContext, useState } from 'react';
 import { products } from '../assets/assets';
 import { toast } from 'react-toastify';
-import { useNavigate } from 'react-router-dom'; // Thêm import useNavigate
+import { useNavigate } from 'react-router-dom';
 
 export const ShopContext = createContext();
 
 const ShopContextProvider = ({ children }) => {
   const currency = 'đ';
   const delivery_fee = 10;
+  const navigate = useNavigate();
 
   const [search, setSearch] = useState('');
   const [showSearch, setShowSearch] = useState(false);
   const [cartItems, setCartItems] = useState({});
-  const navigate = useNavigate(); // Sử dụng useNavigate
+  const [orders, setOrders] = useState([]); // Không lưu vào localStorage
 
-  // Hàm thêm sản phẩm vào giỏ hàng
+  // Thêm sản phẩm vào giỏ hàng
   const addToCart = (itemId, size) => {
     if (!size) {
       toast.error('Vui lòng chọn size');
       return;
     }
 
-    const cartData = structuredClone(cartItems); // Tạo bản sao của giỏ hàng
-
-    if (cartData[itemId]) {
-      if (cartData[itemId][size]) {
-        cartData[itemId][size] += 1; // Tăng số lượng nếu đã tồn tại
-      } else {
-        cartData[itemId][size] = 1; // Tạo mới với số lượng 1
-      }
-    } else {
-      cartData[itemId] = { [size]: 1 }; // Thêm sản phẩm mới với số lượng 1
-    }
-
-    setCartItems(cartData); // Cập nhật state
+    setCartItems((prev) => ({
+      ...prev,
+      [itemId]: {
+        ...prev[itemId],
+        [size]: (prev[itemId]?.[size] || 0) + 1,
+      },
+    }));
   };
 
-  // Hàm tính tổng số lượng sản phẩm trong giỏ hàng
-  const getCartCount = () => {
-    let totalCount = 0;
-    for (const itemId in cartItems) {
-      const sizes = cartItems[itemId];
-      for (const size in sizes) {
-        totalCount += sizes[size]; // Cộng dồn số lượng của từng size
-      }
-    }
-    return totalCount;
-  };
-
-  // Hàm cập nhật số lượng sản phẩm
+  // Cập nhật số lượng sản phẩm trong giỏ hàng
   const updateQuantity = (itemId, size, quantity) => {
-    const cartData = structuredClone(cartItems);
+    setCartItems((prev) => {
+      const newCart = { ...prev };
 
-    if (quantity > 0) {
-      cartData[itemId][size] = quantity;
-    } else {
-      delete cartData[itemId][size]; // Xóa size nếu số lượng = 0
-      if (Object.keys(cartData[itemId]).length === 0) {
-        delete cartData[itemId]; // Xóa sản phẩm nếu không còn size nào
-      }
-    }
-
-    setCartItems(cartData);
-  };
-
-  // Hàm tính tổng số tiền trong giỏ hàng
-  const getCartAmount = () => {
-    let totalAmount = 0;
-
-    for (const itemId in cartItems) {
-      const itemInfo = products.find((product) => product._id === itemId); // Sửa "items" thành "itemId"
-
-      if (!itemInfo) continue; // Bỏ qua nếu không tìm thấy sản phẩm
-
-      for (const size in cartItems[itemId]) { // Lặp qua các size của sản phẩm
-        try {
-          if (cartItems[itemId][size] > 0) {
-            totalAmount += itemInfo.price * cartItems[itemId][size]; // Tính tổng tiền
-          }
-        } catch (error) {
-          console.error('Error calculating cart amount:', error); // Ghi lỗi nếu có
+      if (quantity > 0) {
+        newCart[itemId][size] = quantity;
+      } else {
+        delete newCart[itemId][size];
+        if (Object.keys(newCart[itemId]).length === 0) {
+          delete newCart[itemId];
         }
       }
+
+      return newCart;
+    });
+  };
+
+  // Đặt hàng và cập nhật danh sách đơn hàng
+  const placeOrder = (method) => {
+    if (Object.keys(cartItems).length === 0) {
+      toast.error('Giỏ hàng trống! Vui lòng thêm sản phẩm trước khi đặt hàng.');
+      return;
     }
 
-    return totalAmount;
+    const orderItems = Object.keys(cartItems).map((itemId) => {
+      const product = products.find((p) => p._id === itemId);
+      return {
+        id: itemId,
+        name: product?.name || "Sản phẩm không xác định",
+        image: product?.image || "/default-image.jpg",
+        quantity: Object.values(cartItems[itemId]).reduce((a, b) => a + b, 0),
+        price: product?.price || 0,
+      };
+    });
+
+    const newOrder = {
+      id: new Date().getTime(),
+      items: orderItems,
+      method,
+      date: new Date().toLocaleDateString('vi-VN'),
+      totalAmount: orderItems.reduce((total, item) => total + item.price * item.quantity, 0),
+    };
+
+    setOrders((prev) => [...prev, newOrder]);
+    navigate('/orders');
+  };
+
+  const getCartCount = () => {
+    return Object.values(cartItems).reduce(
+      (total, sizes) => total + Object.values(sizes).reduce((a, b) => a + b, 0),
+      0
+    );
+  };
+
+  const getCartAmount = () => {
+    return Object.keys(cartItems).reduce((totalAmount, itemId) => {
+      const itemInfo = products.find((product) => product._id === itemId);
+      if (!itemInfo) return totalAmount;
+
+      return totalAmount + Object.keys(cartItems[itemId]).reduce(
+        (subtotal, size) => subtotal + itemInfo.price * cartItems[itemId][size],
+        0
+      );
+    }, 0);
   };
 
   const value = {
@@ -96,18 +107,15 @@ const ShopContextProvider = ({ children }) => {
     showSearch,
     setShowSearch,
     cartItems,
-    addToCart, // Thêm hàm vào context
-    getCartCount, // Thêm hàm getCartCount vào context
+    addToCart,
     updateQuantity,
-    getCartAmount, // Thêm hàm getCartAmount vào context
-    navigate // Truyền navigate vào context
+    getCartCount,
+    getCartAmount,
+    placeOrder,
+    orders,
   };
 
-  return (
-    <ShopContext.Provider value={value}>
-      {children}
-    </ShopContext.Provider>
-  );
+  return <ShopContext.Provider value={value}>{children}</ShopContext.Provider>;
 };
 
 export default ShopContextProvider;
